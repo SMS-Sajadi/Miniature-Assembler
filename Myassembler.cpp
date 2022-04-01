@@ -8,6 +8,18 @@
 
 const char* inst[] = {"add","sub","slt","or","nand","addi","slti","ori","lui","lw","sw","beq","jalr","j","halt"};
 
+struct instruction
+{
+    int type;
+    int int_of_inst;
+    char* mnemonic;
+    int rd;
+    int rs;
+    int rt;
+    int imm;
+    int ins_count;
+};
+
 struct symbolTable
 {
     int value;
@@ -59,6 +71,16 @@ void print_symbol(struct symbolTable* table, int size)
     }
 }
 
+int Rtomachine(struct instruction& ins, int where)
+{
+    int bin_num;
+    char* pionter = (char*)&bin_num;
+    for (int i = 0; i < 6; i++)
+    {
+        *(pionter + i) = 0;
+    }
+}
+
 int main(int argc, char** argv) {
     FILE* assp, * machp, * fopen();
     if (argc < 3) {
@@ -86,7 +108,53 @@ int main(int argc, char** argv) {
     fillsymTab(table, assp);
    // print_symbol(table, symtab_len);
 
+    char* line = (char*)malloc(72);
+    char* tok;
+    int ins_count = 0;
+    struct instruction current_ins;
+    while (fgets(line, 72, assp))
+    {
+        current_ins.ins_count = ins_count;
+        ins_count++;
+        if (line[0] == ' ' || line[0] == '\t')
+        {
+            tok = strtok(line, "\t, \n");
+            strcpy(current_ins.mnemonic, tok);
+            int i;
+            for (i = 0; i < 15; i++)
+            {
+                if (strcmp(tok, inst[i]) == 0)
+                {
+                    if (i < 5) current_ins.type = R_type;
+                    else if (i >= 5 && i < 13) current_ins.type = I_type;
+                    else current_ins.type = J_type;
+                    break;
+                }
+                else if (i == 14) current_ins.type = -1;
+            }
+            switch (current_ins.type)
+            {
+            case R_type:
+                for (int i = 0; i < 3; i++)
+                {
+                    tok = strtok(NULL, "\t, \n");
+                    if (!isdigit(tok))
+                    {
+                        printf("error occured wihle reading the R_type Instructon!\a\n");
+                        exit(1);
+                    }
+                    else {
+                        int num = (int)(tok - '0');
+                        if (i == 0) current_ins.rd = num;
+                        else if (i == 1) current_ins.rs = num;
+                        else current_ins.rt = num;
+                    }
+                }
+                int inst = Rtomachine(current_ins, i);
 
+            }
+        }
+    }
 
     fclose(assp);
     fclose(machp);
