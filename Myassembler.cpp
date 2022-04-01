@@ -1,6 +1,61 @@
 #include<stdio.h>
 #include<stdlib.h>
-void main(int argc, char** argv) {
+#include<string.h>
+
+#define R_type 1
+#define I_type 2
+#define J_type 3
+
+const char* inst[] = {"add","sub","slt","or","nand","addi","slti","ori","lui","lw","sw","beq","jalr","j","halt"};
+
+struct symbolTable
+{
+    int value;
+    char* symbol;
+};
+
+int findsymtab_len(FILE* inputfile)
+{
+    int count = 0;
+    size_t line_size;
+    char* line = (char*)malloc(72);
+    fread(&line, sizeof(line), 1, inputfile);
+    while (!feof(inputfile))
+    {
+        if (line[0] == ' ' || line[0] == '\t');
+        else count++;
+        fread(&line, sizeof(line), 1, inputfile);
+    }
+    /*while (getline(&line, &line_size, inputfile) != -1) {}*/
+    rewind(inputfile);
+    free(line);
+    return count;
+}
+
+void fillsymTab(symbolTable* symtab, FILE* inputfile)
+{
+    int nofline = 0, i = 0;
+    size_t line_size;
+    char* line = (char*)malloc(72);
+    char* tok;
+    fread(&line, sizeof(line), 1, inputfile);
+    while (!feof(inputfile))
+    {
+        if (!(line[0] == ' ' || line[0] == '\t'));
+        {
+            tok = strtok(line, "\t, ");
+            strcpy(symtab[i].symbol, tok);
+            symtab[i].value = nofline;
+            i++;
+        }
+        nofline++;
+        fread(&line, sizeof(line), 1, inputfile);
+    }
+    rewind(inputfile);
+    free(line);
+}
+
+int main(int argc, char** argv) {
     FILE* assp, * machp, * fopen();
     if (argc < 3) {
         printf("***** Please run this program as follows:\n");
@@ -19,6 +74,16 @@ void main(int argc, char** argv) {
     }
     // here you can place your code for the assembler
 
+
+
+    int symtab_len = findsymtab_len(assp);
+    symbolTable* table = (symbolTable*)malloc(symtab_len * sizeof(symbolTable));
+    for (int i = 0; i < symtab_len; i++) table[i].symbol = (char*)malloc(10);
+    fillsymTab(table, assp);
+
+
+
     fclose(assp);
     fclose(machp);
+    return 0;
 }
