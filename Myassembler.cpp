@@ -12,7 +12,8 @@ struct instruction
 {
     int type;
     int int_of_inst;
-    char* mnemonic;
+    int opcode;
+    char mnemonic[5];
     int rd;
     int rs;
     int rt;
@@ -71,14 +72,30 @@ void print_symbol(struct symbolTable* table, int size)
     }
 }
 
-int Rtomachine(struct instruction& ins, int where)
+void Rtomachine(struct instruction* ins)
 {
-    int bin_num;
-    char* pionter = (char*)&bin_num;
-    for (int i = 0; i < 6; i++)
-    {
-        *(pionter + i) = 0;
-    }
+    int bin_num = 0x0ffff000;
+    int help = 0xfff0fff;
+    int temp = ins->rd;
+    temp <<= 12;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xfff0ffff;
+    temp = ins->rt;
+    temp <<= 16;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xff0fffff;
+    temp = ins->rs;
+    temp <<= 20;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xf0ffffff;
+    temp = ins->opcode;
+    temp <<= 24;
+    temp |= help;
+    bin_num &= temp;
+    ins->int_of_inst = bin_num;
 }
 
 int main(int argc, char** argv) {
@@ -125,6 +142,7 @@ int main(int argc, char** argv) {
             {
                 if (strcmp(tok, inst[i]) == 0)
                 {
+                    current_ins.opcode = i;
                     if (i < 5) current_ins.type = R_type;
                     else if (i >= 5 && i < 13) current_ins.type = I_type;
                     else current_ins.type = J_type;
@@ -134,24 +152,25 @@ int main(int argc, char** argv) {
             }
             switch (current_ins.type)
             {
-            case R_type:
-                for (int i = 0; i < 3; i++)
-                {
-                    tok = strtok(NULL, "\t, \n");
-                    if (!isdigit(tok))
+                case R_type:
+                    for (int i = 0; i < 3; i++)
                     {
-                        printf("error occured wihle reading the R_type Instructon!\a\n");
-                        exit(1);
+                        tok = strtok(NULL, "\t, \n");
+                        if (!isdigit(tok[0]))
+                        {
+                            printf("error occured wihle reading the R_type Instructon!\a\n");
+                            exit(1);
+                        }
+                        else {
+                            int num = (int)(tok[0] - '0');
+                            if (i == 0) current_ins.rd = num;
+                            else if (i == 1) current_ins.rs = num;
+                            else current_ins.rt = num;
+                        }
                     }
-                    else {
-                        int num = (int)(tok - '0');
-                        if (i == 0) current_ins.rd = num;
-                        else if (i == 1) current_ins.rs = num;
-                        else current_ins.rt = num;
-                    }
-                }
-                int inst = Rtomachine(current_ins, i);
-
+                    Rtomachine(&current_ins);
+                    fprintf(machp, "%d\n", current_ins.int_of_inst);
+                    break;
             }
         }
     }
