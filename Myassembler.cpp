@@ -19,12 +19,10 @@ int findsymtab_len(FILE* inputfile)
     int count = 0;
     size_t line_size;
     char* line = (char*)malloc(72);
-    fread(&line, sizeof(line), 1, inputfile);
-    while (!feof(inputfile))
+    while (fgets(line, 72, inputfile))
     {
         if (line[0] == ' ' || line[0] == '\t');
         else count++;
-        fread(&line, sizeof(line), 1, inputfile);
     }
     /*while (getline(&line, &line_size, inputfile) != -1) {}*/
     rewind(inputfile);
@@ -38,21 +36,27 @@ void fillsymTab(symbolTable* symtab, FILE* inputfile)
     size_t line_size;
     char* line = (char*)malloc(72);
     char* tok;
-    fread(&line, sizeof(line), 1, inputfile);
-    while (!feof(inputfile))
+    while (fgets(line, 72, inputfile))
     {
-        if (!(line[0] == ' ' || line[0] == '\t'));
+        if (!(line[0] == ' ' || line[0] == '\t'))
         {
-            tok = strtok(line, "\t, ");
+            tok = strtok(line, " \t ");
             strcpy(symtab[i].symbol, tok);
             symtab[i].value = nofline;
             i++;
         }
         nofline++;
-        fread(&line, sizeof(line), 1, inputfile);
     }
     rewind(inputfile);
     free(line);
+}
+
+void print_symbol(struct symbolTable* table, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        printf("%s --- %d\n", table[i].symbol, table[i].value);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -80,6 +84,7 @@ int main(int argc, char** argv) {
     symbolTable* table = (symbolTable*)malloc(symtab_len * sizeof(symbolTable));
     for (int i = 0; i < symtab_len; i++) table[i].symbol = (char*)malloc(10);
     fillsymTab(table, assp);
+   // print_symbol(table, symtab_len);
 
 
 
