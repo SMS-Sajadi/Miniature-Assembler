@@ -156,17 +156,23 @@ int main(int argc, char** argv) {
                     for (int i = 0; i < 3; i++)
                     {
                         tok = strtok(NULL, "\t, \n");
-                        if (!isdigit(tok[0]))
-                        {
-                            printf("error occured wihle reading the R_type Instructon!\a\n");
-                            exit(1);
-                        }
-                        else {
+                         if(!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
+                         {
+                             printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                             exit(1);
+                         }
+                         else{
                             int num = (int)(tok[0] - '0');
-                            if (i == 0) current_ins.rd = num;
-                            else if (i == 1) current_ins.rs = num;
+                            if(strlen(tok) == 2) num *= 10 + (int)(tok[1] - '0');
+                            if(num > 16)
+                            {
+                                printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                                exit(1);
+                            }
+                            if(i == 0) current_ins.rd = num;
+                            else if(i == 1) current_ins.rs = num;
                             else current_ins.rt = num;
-                        }
+                         }
                     }
                     Rtomachine(&current_ins);
                     fprintf(machp, "%d\n", current_ins.int_of_inst);
