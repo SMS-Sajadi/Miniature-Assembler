@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
                     }
                     else {
                         int num = (int)(tok[0] - '0');
-                        if (strlen(tok) == 2) num *= 10 + (int)(tok[1] - '0');
+                        if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
                         if (num > 16)
                         {
                             printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
@@ -224,6 +224,12 @@ int main(int argc, char** argv) {
                         if (i == 0) current_ins.rt = num;
                         else current_ins.rs = num;
                     }
+                }
+                if (i == 11)
+                {
+                    int temp = current_ins.rs;
+                    current_ins.rs = current_ins.rt;
+                    current_ins.rt = temp;
                 }
                 tok = strtok(NULL, "\t, \n");
                 if (isdigit(tok[0]))
