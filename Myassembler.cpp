@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
                     {
                         if (strcmp(table[j].symbol, tok) == 0)
                         {
-                            current_ins.imm = table[j].value;
+                            current_ins.imm = table[j].value - ins_count;
                             break;
                         }
                     }
