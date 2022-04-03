@@ -98,6 +98,31 @@ void Rtomachine(struct instruction* ins)
     ins->int_of_inst = bin_num;
 }
 
+void Itomachine(struct instruction* ins)
+{
+    int bin_num = 0x0fffffff;
+    int help = 0xffff0000;
+    int temp = ins->imm;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xfff0ffff;
+    temp = ins->rt;
+    temp <<= 16;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xff0fffff;
+    temp = ins->rs;
+    temp <<= 20;
+    temp |= help;
+    bin_num &= temp;
+    help = 0xf0ffffff;
+    temp = ins->opcode;
+    temp <<= 24;
+    temp |= help;
+    bin_num &= temp;
+    ins->int_of_inst = bin_num;
+}
+
 int main(int argc, char** argv) {
     FILE* assp, * machp, * fopen();
     if (argc < 3) {
@@ -152,31 +177,90 @@ int main(int argc, char** argv) {
             }
             switch (current_ins.type)
             {
-                case R_type:
-                    for (int i = 0; i < 3; i++)
+            case R_type:
+                for (int i = 0; i < 3; i++)
+                {
+                    tok = strtok(NULL, "\t, \n");
+                    if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
                     {
-                        tok = strtok(NULL, "\t, \n");
-                         if(!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
-                         {
-                             printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                             exit(1);
-                         }
-                         else{
-                            int num = (int)(tok[0] - '0');
-                            if(strlen(tok) == 2) num *= 10 + (int)(tok[1] - '0');
-                            if(num > 16)
-                            {
-                                printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                                exit(1);
-                            }
-                            if(i == 0) current_ins.rd = num;
-                            else if(i == 1) current_ins.rs = num;
-                            else current_ins.rt = num;
-                         }
+                        printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
                     }
-                    Rtomachine(&current_ins);
-                    fprintf(machp, "%d\n", current_ins.int_of_inst);
-                    break;
+                    else {
+                        int num = (int)(tok[0] - '0');
+                        if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
+                        if (num > 16)
+                        {
+                            printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                            exit(1);
+                        }
+                        if (i == 0) current_ins.rd = num;
+                        else if (i == 1) current_ins.rs = num;
+                        else current_ins.rt = num;
+                    }
+                }
+                Rtomachine(&current_ins);
+                fprintf(machp, "%d\n", current_ins.int_of_inst);
+                break;
+            case I_type:
+                if (i == 8);
+                if (i == 12);
+                for (int i = 0; i < 2; i++)
+                {
+                    tok = strtok(NULL, "\t, \n");
+                    if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
+                    {
+                        printf("Error occured wihle reading the I_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
+                    }
+                    else {
+                        int num = (int)(tok[0] - '0');
+                        if (strlen(tok) == 2) num *= 10 + (int)(tok[1] - '0');
+                        if (num > 16)
+                        {
+                            printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                            exit(1);
+                        }
+                        if (i == 0) current_ins.rt = num;
+                        else current_ins.rs = num;
+                    }
+                }
+                tok = strtok(NULL, "\t, \n");
+                if (isdigit(tok[0]))
+                {
+                    int num = 0;
+                    for (int j = 0; j < strlen(tok); j++)
+                    {
+                        num *= 10;
+                        num += (int)(tok[j] - '0');
+                    }
+                    if (num > 32767 || num < -32768)
+                    {
+                        printf("Immediate value is out of range!\nIn line: %d used ---> %d\a\n", ins_count - 1, num);
+                        exit(1);
+                    }
+                    current_ins.imm = num;
+                }
+                else
+                {
+                    int j;
+                    for (j = 0; j < symtab_len; j++)
+                    {
+                        if (strcmp(table[j].symbol, tok) == 0)
+                        {
+                            current_ins.imm = table[j].value;
+                            break;
+                        }
+                    }
+                    if (j == symtab_len)
+                    {
+                        printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
+                    }
+                }
+                Itomachine(&current_ins);
+                fprintf(machp, "%d\n", current_ins.int_of_inst);
+                break;
             }
         }
     }
