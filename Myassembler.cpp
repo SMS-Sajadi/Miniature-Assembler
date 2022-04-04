@@ -169,139 +169,167 @@ int main(int argc, char** argv) {
     char* tok;
     int ins_count = 0;
     struct instruction current_ins;
+    //change to bool
+    int symbol;
+    int isluiornot;
     while (fgets(line, 72, assp))
     {
+        symbol = 0;
         current_ins.ins_count = ins_count;
         ins_count++;
-        if (line[0] == ' ' || line[0] == '\t')
+        if (!(line[0] == ' ' || line[0] == '\t'))
         {
             tok = strtok(line, "\t, \n");
-            strcpy(current_ins.mnemonic, tok);
-            int i;
-            for (i = 0; i < 15; i++)
+            tok = strtok(NULL, "\t, \n");
+            if (strcmp(tok, ".fill") == 0)
             {
-                if (strcmp(tok, inst[i]) == 0)
+                int num = 0;
+                tok = strtok(NULL, "\t, \n");
+                if (!isdigit(tok[0]) && tok[0] != '-')
                 {
-                    current_ins.opcode = i;
-                    if (i < 5) current_ins.type = R_type;
-                    else if (i >= 5 && i < 13) current_ins.type = I_type;
-                    else current_ins.type = J_type;
-                    break;
-                }
-                else if (i == 14) current_ins.type = -1;
-            }
-            switch (current_ins.type)
-            {
-            case R_type:
-                for (int i = 0; i < 3; i++)
-                {
-                    tok = strtok(NULL, "\t, \n");
-                    if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
-                    {
-                        printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                        exit(1);
-                    }
-                    else {
-                        int num = (int)(tok[0] - '0');
-                        if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
-                        if (num > 16)
-                        {
-                            printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                            exit(1);
-                        }
-                        if (i == 0) current_ins.rd = num;
-                        else if (i == 1) current_ins.rs = num;
-                        else current_ins.rt = num;
-                    }
-                }
-                Rtomachine(&current_ins);
-                fprintf(machp, "%d\n", current_ins.int_of_inst);
-                break;
-            case I_type:
-                isluiornot = i == 8 ? 1 : 2;
-                for (int i = 0; i < isluiornot; i++)
-                {
-                    tok = strtok(NULL, "\t, \n");
-                    if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
-                    {
-                        printf("Error occured wihle reading the I_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                        exit(1);
-                    }
-                    else {
-                        int num = (int)(tok[0] - '0');
-                        if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
-                        if (num > 16)
-                        {
-                            printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                            exit(1);
-                        }
-                        if (i == 0) current_ins.rt = num;
-                        else current_ins.rs = num;
-                    }
-                }
-                if (i == 8) current_ins.rs = 0;
-                if (i == 11)
-                {
-                    int temp = current_ins.rs;
-                    current_ins.rs = current_ins.rt;
-                    current_ins.rt = temp;
-                }
-                if (i == 12) current_ins.imm = 0;
-                else
-                {
-                    tok = strtok(NULL, "\t, \n");
-                    if (!isdigit(tok[0]) && i == 8)
-                    {
-                        printf("Syntax error!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                        exit(1);
-                    }
-                    if (isdigit(tok[0]))
-                    {
-                        int num = 0;
-                        for (int j = 0; j < strlen(tok); j++)
-                        {
-                            num *= 10;
-                            num += (int)(tok[j] - '0');
-                        }
-                        if (num > 32767 || num < -32768)
-                        {
-                            printf("Immediate value is out of range!\nIn line: %d used ---> %d\a\n", ins_count - 1, num);
-                            exit(1);
-                        }
-                        current_ins.imm = num;
-                    }
-                    else
-                    {
-                        int j;
-                        for (j = 0; j < symtab_len; j++)
-                        {
-                            if (strcmp(table[j].symbol, tok) == 0)
-                            {
-                                if (i == 11) current_ins.imm = table[j].value - ins_count;
-                                else current_ins.imm = table[j].value - ins_count + 1;
-                                break;
-                            }
-                        }
-                        if (j == symtab_len)
-                        {
-                            printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
-                            exit(1);
-                        }
-                    }
-                }
-                Itomachine(&current_ins);
-                fprintf(machp, "%d\n", current_ins.int_of_inst);
-                break;
-            case J_type:
-                if (i == 13)
-                {
-                    tok = strtok(NULL, "\t, \n");
                     int j;
                     for (j = 0; j < symtab_len; j++)
                     {
                         if (strcmp(table[j].symbol, tok) == 0)
                         {
-                            current_ins.imm = table[j].value;
+                            num = table[j].value;
+                            break;
+                        }
+                    }
+                    if (j == symtab_len)
+                    {
+                        printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
+                    }
+                    else {
+                        fprintf(machp, "%d\n", num);
+                        continue;
+                    }
+                }
+                for (int j = tok[0] == '-' ? 1 : 0; j < strlen(tok); j++)
+                {
+                    num *= 10;
+                    num += (int)(tok[j] - '0');
+                }
+                if (tok[0] == '-') num *= -1;
+                if (num > 65535 || num < -65536)
+                {
+                    printf(".fill value is out of range!\nIn line: %d used ---> %d\a\n", ins_count - 1, num);
+                    exit(1);
+                }
+                fprintf(machp, "%d\n", num);
+                continue;
+            }
+            if (strcmp(tok, ".space") == 0)
+            {
+                continue;
+            }
+            symbol = 1;
+        }
+        if (!symbol) tok = strtok(line, "\t, \n");
+        strcpy(current_ins.mnemonic, tok);
+        int i;
+        for (i = 0; i < 15; i++)
+        {
+            if (strcmp(tok, inst[i]) == 0)
+            {
+                current_ins.opcode = i;
+                if (i < 5) current_ins.type = R_type;
+                else if (i >= 5 && i < 13) current_ins.type = I_type;
+                else current_ins.type = J_type;
+                break;
+            }
+            else if (i == 14) current_ins.type = -1;
+        }
+        switch (current_ins.type)
+        {
+        case R_type:
+            for (int i = 0; i < 3; i++)
+            {
+                tok = strtok(NULL, "\t, \n");
+                if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
+                {
+                    printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                    exit(1);
+                }
+                else {
+                    int num = (int)(tok[0] - '0');
+                    if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
+                    if (num > 16)
+                    {
+                        printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
+                    }
+                    if (i == 0) current_ins.rd = num;
+                    else if (i == 1) current_ins.rs = num;
+                    else current_ins.rt = num;
+                }
+            }
+            Rtomachine(&current_ins);
+            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            break;
+        case I_type:
+            isluiornot = i == 8 ? 1 : 2;
+            for (int i = 0; i < isluiornot; i++)
+            {
+                tok = strtok(NULL, "\t, \n");
+                if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
+                {
+                    printf("Error occured wihle reading the I_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                    exit(1);
+                }
+                else {
+                    int num = (int)(tok[0] - '0');
+                    if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
+                    if (num > 16)
+                    {
+                        printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                        exit(1);
+                    }
+                    if (i == 0) current_ins.rt = num;
+                    else current_ins.rs = num;
+                }
+            }
+            if (i == 8) current_ins.rs = 0;
+            if (i == 11)
+            {
+                int temp = current_ins.rs;
+                current_ins.rs = current_ins.rt;
+                current_ins.rt = temp;
+            }
+            if (i == 12) current_ins.imm = 0;
+            else
+            {
+                tok = strtok(NULL, "\t, \n");
+                if (!isdigit(tok[0]) && i == 8)
+                {
+                    printf("Syntax error!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                    exit(1);
+                }
+                if (isdigit(tok[0]))
+                {
+                    int num = 0;
+                    for (int j = 0; j < strlen(tok); j++)
+                    {
+                        num *= 10;
+                        num += (int)(tok[j] - '0');
+                    }
+                    if (num > 32767 || num < -32768)
+                    {
+                        printf("Immediate value is out of range!\nIn line: %d used ---> %d\a\n", ins_count - 1, num);
+                        exit(1);
+                    }
+                    current_ins.imm = num;
+                }
+                else
+                {
+                    int j;
+                    for (j = 0; j < symtab_len; j++)
+                    {
+                        if (strcmp(table[j].symbol, tok) == 0)
+                        {
+                            if (i == 11) current_ins.imm = table[j].value - ins_count;
+                            else current_ins.imm = table[j].value - ins_count + 1;
                             break;
                         }
                     }
@@ -311,11 +339,33 @@ int main(int argc, char** argv) {
                         exit(1);
                     }
                 }
-                else current_ins.imm = 0;
-                Jtomachine(&current_ins);
-                fprintf(machp, "%d\n", current_ins.int_of_inst);
-                break;
             }
+            Itomachine(&current_ins);
+            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            break;
+        case J_type:
+            if (i == 13)
+            {
+                tok = strtok(NULL, "\t, \n");
+                int j;
+                for (j = 0; j < symtab_len; j++)
+                {
+                    if (strcmp(table[j].symbol, tok) == 0)
+                    {
+                        current_ins.imm = table[j].value;
+                        break;
+                    }
+                }
+                if (j == symtab_len)
+                {
+                    printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count - 1, tok);
+                    exit(1);
+                }
+            }
+            else current_ins.imm = 0;
+            Jtomachine(&current_ins);
+            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            break;
         }
     }
 
