@@ -6,6 +6,8 @@
 #define I_type 2
 #define J_type 3
 
+#define dash_line printf("------------------------------------------------\n")
+
 const char* inst[] = {"add","sub","slt","or","nand","addi","slti","ori","lui","lw","sw","beq","jalr","j","halt"};
 
 struct instruction
@@ -70,6 +72,19 @@ void print_symbol(struct symbolTable* table, int size)
     {
         printf("%s --- %d\n", table[i].symbol, table[i].value);
     }
+}
+
+bool check_sumbol_table(struct symbolTable* table, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        for (int j = 0; j < size; j++)
+        {
+            if (i == j) continue;
+            if (strcmp(table[i].symbol, table[j].symbol) == 0) return true;
+        }
+    }
+    return false;
 }
 
 void Rtomachine(struct instruction* ins)
@@ -163,7 +178,18 @@ int main(int argc, char** argv) {
     symbolTable* table = (symbolTable*)malloc(symtab_len * sizeof(symbolTable));
     for (int i = 0; i < symtab_len; i++) table[i].symbol = (char*)malloc(10);
     fillsymTab(table, assp);
-   // print_symbol(table, symtab_len);
+
+    dash_line;
+    print_symbol(table, symtab_len);
+    dash_line;
+
+    if (check_sumbol_table(table, symtab_len))
+    {
+        dash_line;
+        printf("A repetitive Symbol Detected!\a\n");
+        dash_line;
+        exit(1);
+    }
 
     char* line = (char*)malloc(72);
     char* tok;
@@ -198,7 +224,9 @@ int main(int argc, char** argv) {
                     }
                     if (j == symtab_len)
                     {
+                        dash_line;
                         printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                        dash_line;
                         exit(1);
                     }
                     else {
@@ -214,14 +242,12 @@ int main(int argc, char** argv) {
                 if (tok[0] == '-') num *= -1;
                 if (num > 65535 || num < -65536)
                 {
+                    dash_line;
                     printf(".fill value is out of range!\nIn line: %d used ---> %d\a\n", ins_count, num);
+                    dash_line;
                     exit(1);
                 }
                 fprintf(machp, "%d\n", num);
-                continue;
-            }
-            if (strcmp(tok, ".space") == 0)
-            {
                 continue;
             }
             symbol = 1;
@@ -249,7 +275,9 @@ int main(int argc, char** argv) {
                 tok = strtok(NULL, "\t, \n");
                 if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
                 {
-                    printf("Error occured wihle reading the R_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
+                    printf("Error occurred while reading the R_type Instruction!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
                     exit(1);
                 }
                 else {
@@ -257,7 +285,9 @@ int main(int argc, char** argv) {
                     if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
                     if (num > 16)
                     {
+                        dash_line;
                         printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                        dash_line;
                         exit(1);
                     }
                     if (i == 0) current_ins.rd = num;
@@ -275,7 +305,9 @@ int main(int argc, char** argv) {
                 tok = strtok(NULL, "\t, \n");
                 if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
                 {
-                    printf("Error occured wihle reading the I_type Instructon!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
+                    printf("Error occurred wihle reading the I_type Instruction!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
                     exit(1);
                 }
                 else {
@@ -283,7 +315,9 @@ int main(int argc, char** argv) {
                     if (strlen(tok) == 2) num = num * 10 + (int)(tok[1] - '0');
                     if (num > 16)
                     {
+                        dash_line;
                         printf("Register Num is out of range!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                        dash_line;
                         exit(1);
                     }
                     if (i == 0) current_ins.rt = num;
@@ -303,20 +337,25 @@ int main(int argc, char** argv) {
                 tok = strtok(NULL, "\t, \n");
                 if (!isdigit(tok[0]) && i == 8)
                 {
+                    dash_line;
                     printf("Syntax error!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
                     exit(1);
                 }
-                if (isdigit(tok[0]))
+                if (isdigit(tok[0]) || tok[0] == '-')
                 {
                     int num = 0;
-                    for (int j = 0; j < strlen(tok); j++)
+                    for (int j = tok[0] == '-' ? 1 : 0; j < strlen(tok); j++)
                     {
                         num *= 10;
                         num += (int)(tok[j] - '0');
                     }
+                    if (tok[0] == '-') num *= -1;
                     if (num > 32767 || num < -32768)
                     {
+                        dash_line;
                         printf("Immediate value is out of range!\nIn line: %d used ---> %d\a\n", ins_count, num);
+                        dash_line;
                         exit(1);
                     }
                     current_ins.imm = num;
@@ -335,7 +374,9 @@ int main(int argc, char** argv) {
                     }
                     if (j == symtab_len)
                     {
+                        dash_line;
                         printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                        dash_line;
                         exit(1);
                     }
                 }
@@ -358,7 +399,9 @@ int main(int argc, char** argv) {
                 }
                 if (j == symtab_len)
                 {
+                    dash_line;
                     printf("Symbol wasnt find!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+                    dash_line;
                     exit(1);
                 }
             }
@@ -367,7 +410,9 @@ int main(int argc, char** argv) {
             fprintf(machp, "%d\n", current_ins.int_of_inst);
             break;
         default:
+            dash_line;
             printf("Syntax error!\nIn line: %d used ---> %s\a\n", ins_count, tok);
+            dash_line;
             exit(1);
         }
     }
