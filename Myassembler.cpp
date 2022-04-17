@@ -74,7 +74,7 @@ void print_symbol(struct symbolTable* table, int size)
     }
 }
 
-bool check_sumbol_table(struct symbolTable* table, int size)
+bool check_symbol_table(struct symbolTable* table, int size)
 {
     for (int i = 0; i < size; i++)
     {
@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
     print_symbol(table, symtab_len);
     dash_line;
 
-    if (check_sumbol_table(table, symtab_len))
+    if (check_symbol_table(table, symtab_len))
     {
         dash_line;
         printf("A repetitive Symbol Detected!\a\n");
@@ -368,7 +368,7 @@ int main(int argc, char** argv) {
                         if (strcmp(table[j].symbol, tok) == 0)
                         {
                             if (i == 11) current_ins.imm = table[j].value - ins_count;
-                            else current_ins.imm = table[j].value - ins_count + 1;
+                            else current_ins.imm = table[j].value;
                             break;
                         }
                     }
