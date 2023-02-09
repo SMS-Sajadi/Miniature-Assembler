@@ -1,6 +1,13 @@
-#include<stdio.h>
+#include<iostream>
 #include<stdlib.h>
-#include<string.h>
+#include<string>
+#include<ctype.h>
+#include<fstream>
+
+#pragma warning(disable : 4996)
+#pragma warning(disable : 4703)
+
+using namespace std;
 
 #define R_type 1
 #define I_type 2
@@ -8,7 +15,7 @@
 
 #define dash_line printf("------------------------------------------------\n")
 
-const char* inst[] = {"add","sub","slt","or","nand","addi","slti","ori","lui","lw","sw","beq","jalr","j","halt"};
+const char* inst[] = { "add","sub","slt","or","nand","addi","slti","ori","lui","lw","sw","beq","jalr","j","halt" };
 
 struct instruction
 {
@@ -29,30 +36,29 @@ struct symbolTable
     char* symbol;
 };
 
-int findsymtab_len(FILE* inputfile)
+int findsymtab_len(ifstream& inputfile)
 {
     int count = 0;
-    size_t line_size;
-    char* line = (char*)malloc(72);
-    while (fgets(line, 72, inputfile))
+    string line;
+    while (getline(inputfile, line))
     {
         if (line[0] == ' ' || line[0] == '\t');
         else count++;
     }
-    /*while (getline(&line, &line_size, inputfile) != -1) {}*/
-    rewind(inputfile);
-    free(line);
+    inputfile.clear();
+    inputfile.seekg(0);
     return count;
 }
 
-void fillsymTab(symbolTable* symtab, FILE* inputfile)
+void fillsymTab(struct symbolTable* symtab, ifstream& inputfile)
 {
     int nofline = 0, i = 0;
-    size_t line_size;
-    char* line = (char*)malloc(72);
+    char* line = new char[72];
+    string line_string;
     char* tok;
-    while (fgets(line, 72, inputfile))
+    while (getline(inputfile, line_string))
     {
+        strcpy(line, line_string.c_str());
         if (!(line[0] == ' ' || line[0] == '\t'))
         {
             tok = strtok(line, " \t ");
@@ -62,8 +68,9 @@ void fillsymTab(symbolTable* symtab, FILE* inputfile)
         }
         nofline++;
     }
-    rewind(inputfile);
-    free(line);
+    delete[] line;
+    inputfile.clear();
+    inputfile.seekg(0);
 }
 
 void print_symbol(struct symbolTable* table, int size)
@@ -73,6 +80,7 @@ void print_symbol(struct symbolTable* table, int size)
         printf("%s --- %d\n", table[i].symbol, table[i].value);
     }
 }
+
 
 bool check_symbol_table(struct symbolTable* table, int size)
 {
@@ -154,7 +162,8 @@ void Jtomachine(struct instruction* ins)
 }
 
 int main(int argc, char** argv) {
-    FILE* assp, * machp, * fopen();
+    ifstream assp;
+    ofstream machp;
     if (argc < 3) {
         printf("***** Please run this program as follows:\n");
         printf("***** %s assprog.as machprog.m\n", argv[0]);
@@ -162,21 +171,22 @@ int main(int argc, char** argv) {
         printf("***** and machprog.m will be your machine code.\n");
         exit(1);
     }
-    if ((assp = fopen(argv[1], "r")) == NULL) {
+    assp.open(argv[1], ios::_Nocreate);
+    machp.open(argv[2]);
+    if (!assp) {
         printf("%s cannot be openned\n", argv[1]);
         exit(1);
     }
-    if ((machp = fopen(argv[2], "w+")) == NULL) {
+    if (!machp) {
         printf("%s cannot be openned\n", argv[2]);
         exit(1);
     }
     // here you can place your code for the assembler
 
-
-
+    struct symbolTable* table;
     int symtab_len = findsymtab_len(assp);
-    symbolTable* table = (symbolTable*)malloc(symtab_len * sizeof(symbolTable));
-    for (int i = 0; i < symtab_len; i++) table[i].symbol = (char*)malloc(10);
+    table = new symbolTable[symtab_len];
+    for (int i = 0; i < symtab_len; i++) table[i].symbol = new char[10];
     fillsymTab(table, assp);
 
     dash_line;
@@ -191,26 +201,28 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    char* line = (char*)malloc(72);
+    string line_string;
+    char* line = new char[72];
     char* tok;
     int ins_count = 0;
     struct instruction current_ins;
-    //change to bool
-    int symbol;
+
+    bool symbol;
     int isluiornot;
-    while (fgets(line, 72, assp))
+    while (getline(assp, line_string))
     {
-        symbol = 0;
+        strcpy(line, line_string.c_str());
+        symbol = false;
         current_ins.ins_count = ins_count;
         ins_count++;
         if (!(line[0] == ' ' || line[0] == '\t'))
         {
-            tok = strtok(line, "\t, \n");
-            tok = strtok(NULL, "\t, \n");
+            tok = strtok(line, "\t, \n\r");
+            tok = strtok(NULL, "\t, \n\r");
             if (strcmp(tok, ".fill") == 0)
             {
                 int num = 0;
-                tok = strtok(NULL, "\t, \n");
+                tok = strtok(NULL, "\t, \n\r");
                 if (!isdigit(tok[0]) && tok[0] != '-')
                 {
                     int j;
@@ -230,7 +242,7 @@ int main(int argc, char** argv) {
                         exit(1);
                     }
                     else {
-                        fprintf(machp, "%d\n", num);
+                        machp << num << endl;
                         continue;
                     }
                 }
@@ -247,12 +259,12 @@ int main(int argc, char** argv) {
                     dash_line;
                     exit(1);
                 }
-                fprintf(machp, "%d\n", num);
+                machp << num << endl;
                 continue;
             }
-            symbol = 1;
+            symbol = true;
         }
-        if (!symbol) tok = strtok(line, "\t, \n");
+        if (!symbol) tok = strtok(line, "\t, \n\r");
         strcpy(current_ins.mnemonic, tok);
         int i;
         for (i = 0; i < 15; i++)
@@ -272,7 +284,7 @@ int main(int argc, char** argv) {
         case R_type:
             for (int i = 0; i < 3; i++)
             {
-                tok = strtok(NULL, "\t, \n");
+                tok = strtok(NULL, "\t, \n\r");
                 if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
                 {
                     dash_line;
@@ -296,13 +308,13 @@ int main(int argc, char** argv) {
                 }
             }
             Rtomachine(&current_ins);
-            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            machp << current_ins.int_of_inst << endl;
             break;
         case I_type:
             isluiornot = i == 8 ? 1 : 2;
             for (int i = 0; i < isluiornot; i++)
             {
-                tok = strtok(NULL, "\t, \n");
+                tok = strtok(NULL, "\t, \n\r");
                 if (!isdigit(tok[0]) || strlen(tok) > 2 || (strlen(tok) == 2 && !isdigit(tok[1])))
                 {
                     dash_line;
@@ -334,7 +346,7 @@ int main(int argc, char** argv) {
             if (i == 12) current_ins.imm = 0;
             else
             {
-                tok = strtok(NULL, "\t, \n");
+                tok = strtok(NULL, "\t, \n\r");
                 if (!isdigit(tok[0]) && i == 8)
                 {
                     dash_line;
@@ -382,12 +394,12 @@ int main(int argc, char** argv) {
                 }
             }
             Itomachine(&current_ins);
-            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            machp << current_ins.int_of_inst << endl;
             break;
         case J_type:
             if (i == 13)
             {
-                tok = strtok(NULL, "\t, \n");
+                tok = strtok(NULL, "\t, \n\r");
                 int j;
                 for (j = 0; j < symtab_len; j++)
                 {
@@ -407,7 +419,7 @@ int main(int argc, char** argv) {
             }
             else current_ins.imm = 0;
             Jtomachine(&current_ins);
-            fprintf(machp, "%d\n", current_ins.int_of_inst);
+            machp << current_ins.int_of_inst << endl;
             break;
         default:
             dash_line;
@@ -417,7 +429,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    fclose(assp);
-    fclose(machp);
+    delete[] line;
+    assp.close();
+    machp.close();
     return 0;
 }
